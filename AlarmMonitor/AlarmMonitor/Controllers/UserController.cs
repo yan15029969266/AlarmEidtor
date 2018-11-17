@@ -30,7 +30,8 @@ namespace AlarmMonitor.Controllers
                 {
                     user.LogInTime = DateTime.Now;
                     entities.SaveChanges();
-                    Mapper.CreateMap<user_log, UserModel>(); // 配置
+                    //Mapper.CreateMap<user_log, UserModel>(); // 配置
+                    Mapper.Initialize(cfg => cfg.CreateMap<user_log, UserModel>());
                     model = Mapper.Map<user_log, UserModel>(user); // 使用AutoMapper自动映射
                     SessionHelper.Add("adminInfo", model, 120);
                     return Json(true); 
