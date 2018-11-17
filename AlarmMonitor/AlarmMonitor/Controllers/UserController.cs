@@ -24,7 +24,8 @@ namespace AlarmMonitor.Controllers
         {
             using (ANDONEntities entities = new ANDONEntities())
             {
-                string pwd=Untils.MD5Encrypt(model.PWD);
+                //string pwd=Untils.MD5Encrypt(model.PWD);
+                string pwd = model.PWD;
                 user_log user = entities.user_log.Where(t => t.UID == model.UID && t.PWD == pwd).FirstOrDefault();
                 if (user != null)
                 {
