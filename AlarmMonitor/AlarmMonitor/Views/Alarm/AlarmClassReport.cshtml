@@ -1,0 +1,331 @@
+﻿<link href="~/bower_components/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet" />
+<link href="~/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+<div ng-app="myApp" ng-controller="AlarmClassReportCtrl" ng-init="init()">
+    <section class="content-header sub_head">
+        <h1>
+            报表
+            <small> 停线类型分析</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li>
+                <a href="#">
+                    <i class="fa fa-dashboard"></i>
+                    主页
+                </a>
+            </li>
+            <li class="active">
+                <a href="">报表</a>
+            </li>
+            <li class="active">停线类型分析</li>
+        </ol>
+    </section>
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    @*<div class="box-header with-border">
+                        <h3 class="box-title">筛选</h3>
+                    </div>*@
+                    <div class="box-body">
+                        <div class="row">
+
+                            <div class="col-xs-6">
+                                <label>时间段选择:</label>
+                                <div class="input-group">
+
+                                    <div class="input-group-addon">
+                                        <i class="fa fa-clock-o"></i>
+                                    </div>
+                                    <input type="text" class="form-control pull-right" style="text-align:center" id="reservationtime">
+                                </div>
+                            </div>
+                            <div class="col-xs-3">
+                                <label>工段:</label>
+                                <select class="form-control" ng-init="Filter.AlarmAreas = AlarmAreas[0]" ng-model="Filter.Alarm_area" ng-options="x for x in AlarmAreas"></select>
+                            </div>
+                            <div class="col-xs-3">
+                                <label>责任类型:</label>
+                                <select class="form-control" ng-init="Filter.Division_of_respon = Division_of_respons[0]" ng-model="Filter.Division_of_respon" ng-options="x for x in Division_of_respons"></select>
+                            </div>
+                            <div class="col-xs-3">
+                                <label>责任部门:</label>
+                                <select class="form-control" ng-init="Filter.Responsible = Responsibles[0]" ng-model="Filter.Responsible" ng-options="x for x in Responsibles"></select>
+                            </div>
+                            <div class="col-xs-3">
+                                <label>编辑人:</label>
+                                <input class="form-control" ng-model="Filter.Recorder" />
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.box-body -->
+                    <div class="box-footer">
+                        @*<button type="submit" class="btn btn-default">清除</button>*@
+                        <button type="submit" class="btn btn-info pull-right" ng-click="search()">搜索</button>
+                    </div>
+                </div>
+                <div class="col-lg-7 col-sm-12 box-body">
+                    <div id="barChart" class="col-xs-12" style="height:400px;"></div>
+                </div>
+                <div class="col-lg-5">
+                    <div id="pieChart" class="col-xs-12 col-sm-12" style="height:400px; margin:auto"></div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+</div>
+<script src="~/bower_components/Echarts/echarts.js"></script>
+<script src="~/bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="~/bower_components/moment/min/moment.min.js"></script>
+<script src="~/bower_components/bootstrap-daterangepicker/daterangepicker.js"></script>
+<script>
+    var app = angular.module('myApp', []);
+    app.controller('AlarmClassReportCtrl', function ($scope, $http) {
+        $scope.AlarmAreas = [];
+        $scope.Division_of_respons = [];
+        $scope.Responsibles = []
+
+        $scope.BarLabels = [];
+        $scope.BarData = [];
+
+        $scope.PieData = [];
+
+        var day = new Date();
+        day.setTime(day.getTime() + 24 * 60 * 60 * 1000);
+        $scope.Filter = {
+            Start_time: new Date(new Date().setHours(08, 00, 00, 00)),
+            End_time: new Date(day.setHours(08, 00, 00, 00)),
+            Alarm_area: null,
+            Division_of_respon: null,
+            Responsible: null,
+            Recorder: null,
+        }
+
+        $scope.init = function () {
+            $http.post('/Home/IntFilter').then(
+                function successCallback(response) {
+
+                    $scope.AlarmAreas = response.data.alarmAreas;
+                    $scope.Division_of_respons = response.data.Division_of_respons;
+                    $scope.Responsibles = response.data.Responsibles;
+                },
+                function errorCallback(response) {
+                    // 请求失败执行代码
+                });
+            $scope.loadData();
+        }
+
+        $scope.loadData = function () {
+            $http.post('GetAlarmClassData', $scope.Filter).then(
+                function successCallback(response) {
+                    $scope.BarLabels = response.data.BarLabels;
+                    $scope.BarData = response.data.BarData;
+                    $scope.PieData = response.data.PieData;
+                    $scope.initChart();
+                },
+                function errorCallback(response) {
+                    // 请求失败执行代码
+                });
+        }
+        $scope.initChart = function () {
+            //Bar chart
+            var app = {};
+            app.config = {
+                rotate: 0,
+                align: 'left',
+                verticalAlign: 'middle',
+                position: 'insideBottomLeft',
+                distance: 15
+            };
+
+
+            var labelOption = {
+                normal: {
+                    show: true,
+                    position: app.config.position,
+                    distance: app.config.distance,
+                    align: app.config.align,
+                    verticalAlign: app.config.verticalAlign,
+                    rotate: app.config.rotate,
+                    formatter: '{c}',
+                    fontSize: 16,
+                    rich: {
+                        name: {
+                            textBorderColor: '#fff'
+                        }
+                    }
+                }
+            };
+
+            option = {
+                color: ['#4cabce'],
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    //formatter: "{b}  <br/> {a}: {c}%"
+                    formatter: function (params) {
+                        // 假设此轴的 type 为 'time'。
+                        var texts = params[0].seriesName + " <br/> " + params[0].axisValue + ": " + params[0].value
+                        var sum = $scope.sum($scope.BarData);
+                        var ratio = (params[0].value / sum) * 100;
+                        texts = texts + "<br/>" + "占比：" + ratio.toFixed(2) + "%"
+                        return texts;
+                    }
+                },
+                legend: {
+                    data: ['责任部门']
+                },
+                toolbox: {
+                    show: true,
+                    orient: 'vertical',
+                    left: 'right',
+                    top: 'center',
+                    feature: {
+                        //mark: { show: true },
+                        //dataView: { show: true, readOnly: false },
+                        //magicType: { show: true, type: ['line', 'bar', 'stack', 'tiled'] },
+                        //restore: { show: true },
+                        //saveAsImage: { show: true }
+                    }
+                },
+                calculable: true,
+                xAxis:
+                    {
+                        type: 'category',
+                        axisTick: { show: false },
+                        data: $scope.BarLabels
+                    },
+                yAxis:
+                    {
+                        type: 'value',
+                        axisLabel: {
+                            formatter: function (value, index) {
+                                var sum = $scope.sum($scope.BarData);
+                                var texts = (value / sum) * 100;
+                                //num = num.toFixed(2);
+                                return texts.toFixed(2) + "%";
+                            }
+                        },
+                        max: function (value) {
+                            return $scope.sum($scope.BarData);
+                        }
+                    }
+                ,
+                series: [
+                    {
+                        name: '责任部门',
+                        type: 'bar',
+                        barGap: 0,
+                        label: labelOption,
+                        data: $scope.BarData
+                    }
+                ]
+            };
+            var barChart = echarts.init(document.getElementById('barChart'));
+            // 使用刚指定的配置项和数据显示图表。
+            barChart.setOption(option);
+
+
+            //饼状图
+            pieOption = {
+                title: {
+                    text: '责任类型统计',
+                    subtext: '最多显示前十',
+                    x: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                series: [
+                    {
+                        name: '责任类型',
+                        type: 'pie',
+                        radius: '55%',
+                        center: ['40%', '50%'],
+                        //data: data.seriesData,
+                        data: $scope.PieData,
+                        itemStyle: {
+                            emphasis: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+            var pieChart = echarts.init(document.getElementById('pieChart'));
+            // 使用刚指定的配置项和数据显示图表。
+            pieChart.setOption(pieOption);
+        }
+
+        $scope.search = function () {
+            $scope.loadData();
+        }
+
+        $scope.sum = function sum(arr) {
+            var len = arr.length;
+            if (len == 0) {
+                return 0;
+            } else if (len == 1) {
+                return arr[0];
+            } else {
+                return arr[0] + sum(arr.slice(1));
+            }
+        }
+        $('#reservationtime').daterangepicker({
+            timePicker: true,
+            timePickerIncrement: 30,
+            timePicker24Hour: true,
+            locale: {
+                "format": "YYYY-MM-DD HH:mm:ss",
+                "separator": " 至 ",
+                "applyLabel": "应用",
+                "cancelLabel": "取消",
+                "fromLabel": "From",
+                "toLabel": "To",
+                "customRangeLabel": "Custom",
+                "daysOfWeek": [
+                  "日",
+                  "一",
+                  "二",
+                  "三",
+                  "四",
+                  "五",
+                  "六"
+                ],
+                "monthNames": [
+                  "一月",
+                  "二月",
+                  "三月",
+                  "四月",
+                  "五月",
+                  "六月",
+                  "7月",
+                  "八月",
+                  "九月",
+                  "十月",
+                  "十一月",
+                  "十二月"
+                ],
+                "firstDay": 1
+            },
+            startDate: $scope.Filter.Start_time,
+            endDate: $scope.Filter.End_time
+            //endDate: new Date(new Date(new Date().setHours(08, 00, 00, 00)).getTime() + 24 * 60 * 60 * 1000)
+        }, function (start, end, label) {
+            $scope.Filter.Start_time = start;
+            $scope.Filter.End_time = end;
+        });
+
+
+    });
+
+
+
+
+
+</script>

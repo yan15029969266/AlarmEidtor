@@ -1,0 +1,95 @@
+﻿<link href="~/bower_components/pagination/pagination.css" rel="stylesheet" />
+<link href="~/bower_components/bootstrap-daterangepicker/daterangepicker.css" rel="stylesheet" />
+<link href="~/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+<div ng-app="myApp" ng-controller="NoticeCtrl" ng-init="init()">
+    <section class="content-header sub_head">
+        <h1>
+            设置
+            <small> 通知设置</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li>
+                <a href="#">
+                    <i class="fa fa-dashboard"></i>
+                    主页
+                </a>
+            </li>
+            <li class="active">
+                <a href="">设置</a>
+            </li>
+            <li class="active">通知设置</li>
+        </ol>
+    </section>
+    <section class="content">
+        <div class="row">
+
+            <div class="box box-warning">
+                <div class="box-header with-border">
+                    <h3 class="box-title">General Elements</h3>
+                </div>
+                <!-- /.box-header -->
+                <div class="box-body">
+                    <form role="form">
+                        <!-- textarea -->
+                        <div class="form-group">
+                            <label>Textarea</label>
+                            <textarea class="form-control" rows="3" placeholder="输入 ..." ng-model="NoticeEidt.Message"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <!-- /.box-body -->
+                <div class="box-footer">
+                    <button type="submit" class="btn btn-primary" ng-click="Save()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<script src="~/Scripts/bootbox.js"></script>
+@*<script src="~/Script/wwt.js"></script>*@
+<script>
+    var app = angular.module('myApp', []);
+    app.controller('NoticeCtrl', function ($scope, $http) {
+       
+        $scope.NoticeEidt = {
+            ID: null,
+            Message: null,
+        }
+
+
+        $scope.init = function () {
+
+            $http.post('GetNotice').then(
+                function successCallback(response) {
+                    ////alert(response.data.Message);
+                    $scope.NoticeEidt = response.data.aaData;
+                    //$scope.NoticeEidt.ID = response.data.ID;
+                    //$scope.NoticeEidt.Message = response.data.Message;
+                },
+                function errorCallback(response) {
+                    // 请求失败执行代码
+                });
+        }
+
+        $scope.Save = function () {
+            $http.post('ModifyNotice', $scope.NoticeEidt).then(
+                function successCallback(response) {
+                    //alert(response.data.result);
+                    if (response.data.result == true) {
+                        toastr.success("修改成功！")
+                    }
+                    else {
+                        toastr.error("修改失败！")
+                    }
+                },
+                function errorCallback(response) {
+                    // 请求失败执行代码
+                });
+            
+        }
+
+
+    });
+
+
+</script>
